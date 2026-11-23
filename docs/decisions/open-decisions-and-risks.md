@@ -1,0 +1,27 @@
+# Open decisions and risks (SRS alignment)
+
+Source: `D:\SRS &MASTAR.docx` / `.pdf` (extracted text referenced in [decisions.md](../decisions.md)). ADR-001–ADR-009 are **Accepted**. The items below are still open or explicitly deferred; they are not claims of completion.
+
+> **Deferred by user directive:** the P0 media/Drive scope is **Explicitly Deferred** by the recorded user decision. The SRS names LiveKit media/proximity audio/meetings/recording and Google Drive integration; the current build deliberately ships honest notes/placeholders instead. These items are not claimed as accepted SRS features; see [deferred-register.md](../deferred-register.md).
+
+| # | Open decision | Status | Alternatives | Risk / decision needed |
+| --- | --- | --- | --- | --- |
+| 1 | Persistence model for the next phase: keep the single JSONB `saha_state` row or move to normalized tables | Partially Implemented | (a) keep JSONB document with row locks; (b) implement normalized repositories now; (c) dual-write/backfill | JSONB gives transactional atomicity but no per-row constraints, RLS or efficient queries. Normalized schema/migrations exist **Implemented but Not Runtime-Verified**; no repository uses them. Owner must choose a cutover plan. |
+| 2 | Tenant isolation at the database layer | Not Implemented | (a) application filters only; (b) `tenant_id` + RLS using `app.tenant_id`; (c) schema-per-tenant | A single missed filter leaks data. RLS design is documented but no policy is applied. Decide before exposing raw SQL. |
+| 3 | WebSocket credential design | Partially Implemented | (a) dedicated `/auth/ws-ticket` with `saha_csrf` fallback (current); (b) HMAC-signed ticket; (c) signed cookie | Session, CSRF and WS credentials are separate and world-only, and the ticket has a 10-minute TTL, but the fallback remains cookie-derived and neither is HMAC-signed. `SESSION_SECRET` is used for **OTP HMAC**, not WS HMAC. Decide rotation/replay policy for production. |
+| 4 | P0 media (LiveKit, proximity audio, meetings, recording) and Google Drive | Explicitly Deferred | (a) integrate now; (b) keep deferred with honest UI notes (chosen); (c) phased integration after core approval | Deferred by recorded user directive. Out of MVP scope; not claimed as accepted SRS features. See [deferred-register.md](../deferred-register.md). |
+| 5 | Guest identity model | Partially Implemented | (a) synthetic users + scoped session (current); (b) first-class `guest_admissions`; (c) anonymous signed invitations | Audit records attribute actions to synthetic users. Decide whether guests become durable identities before normalized persistence. |
+| 6 | Attendance finalization trigger | Not Implemented | (a) on-demand API/UI action (current); (b) cron/queue worker; (c) lazy finalize on read | Un-finalized absences can linger if nobody clicks. Decide SLA and idempotency rules. |
+| 7 | Multi-instance presence | Explicitly Deferred | (a) one process (ADR-002); (b) Redis pub/sub + shared presence; (c) sticky sessions only | Horizontal scaling fragments presence and local state. Sticky sessions are not sufficient. Decide before scaling out. |
+| 8 | OTP delivery and `SESSION_SECRET` operations | Not Implemented | (a) dev-only `devCode`; (b) real SMS provider; (c) email fallback | Password reset is not production-usable without a provider. Short/missing `SESSION_SECRET` falls back to a warned-about deterministic dev HMAC key; rotation invalidates outstanding OTPs. |
+| 9 | File storage provider and retention | Not Implemented | (a) local object store with tenant prefixes; (b) managed S3-compatible bucket; (c) Drive (deferred) | `file_assets` is metadata only. Decide provider, signed-URL TTL, encryption, lifecycle and delete semantics. |
+| 10 | Audit integrity and retention | Partially Implemented | (a) JSON state entries; (b) append-only DB table with restricted roles; (c) central WORM/SIEM shipping | Logs are mutable in the current store and have no retention policy. Decide immutability and export schedule. |
+| 11 | Rate limiting and abuse controls | Not Implemented | (a) reverse-proxy limits; (b) app middleware; (c) both | Login/register/OTP/token redemption are enumerable without limits. Decide thresholds and monitoring. |
+| 12 | Migration and rollback ownership | Implemented but Not Runtime-Verified | (a) hand-reviewed SQL + `psql`; (b) `drizzle-kit migrate`; (c) external migration tool | Baseline SQL exists but was never applied. No rollback/backup drill. Decide who approves and executes migrations. |
+| 13 | Staging/production environment separation | Partially Implemented | (a) separate projects/accounts and secrets; (b) shared DB with schemas | `.env.example` documents separation; no infrastructure exists. Decide secret store and data-residency rules. |
+
+## Approval summary
+
+- **Accepted already:** stack (ADR-001), single-instance in-memory presence (ADR-002), local JSON default (ADR-003), cookie/CSRF/WS design (ADR-004), onboarding paths (ADR-005), demo isolation (ADR-006), server-authoritative attendance (ADR-007), deferred register (ADR-008), server-side RBAC/tenancy (ADR-009).
+- **Phase E additions:** schema, SQL baseline and config are **Implemented but Not Runtime-Verified**; they change no runtime behavior and need product/ops approval before application.
+- **Explicit user decision recorded:** the P0 media/Drive scope is **Explicitly Deferred**; no fake controls were added.
