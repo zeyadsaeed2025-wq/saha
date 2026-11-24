@@ -36,19 +36,19 @@ No database connection was attempted with application credentials because `DATAB
 | Check | Result | Interpretation |
 | --- | --- | --- |
 | Env variable presence (Process/User/Machine) | `DATABASE_URL`, `PGSSLMODE`, `PG_POOL_MAX`, `SUPABASE_URL`, `SUPABASE_DB_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ACCESS_TOKEN`, `CREDENTIAL_MASTER_KEY` = `MISSING` | There is no local connection string to validate. This is not evidence that credentials are invalid. |
-| DNS `db.wyjnopgbdszzkehxside.supabase.co` A | Empty | Current resolver returned no IPv4 address for the direct DB hostname. |
-| DNS `db.wyjnopgbdszzkehxside.supabase.co` AAAA | `2a05:d018:ea6:fe00:2d75:3459:17d9:5878` | Current resolver returned IPv6 only for the direct DB hostname. |
-| TCP `db.wyjnopgbdszzkehxside.supabase.co:5432` | False | Direct PostgreSQL port is unreachable from this shell. Cause is not isolated; could be egress, firewall, IPv6 routing, allowlist, or project network config. |
-| TCP `db.wyjnopgbdszzkehxside.supabase.co:6543` | False | Port 6543 on the direct DB hostname is unreachable here. This is **not** a definitive pooler test: the real pooler hostname/mode is unknown until `DATABASE_URL` is supplied. |
-| DNS `wyjnopgbdszzkehxside.supabase.co` A | `172.64.149.246,104.18.38.10` | API hostname resolves. |
-| TCP `wyjnopgbdszzkehxside.supabase.co:443` | True | HTTPS egress to the Supabase API host works. |
-| `GET https://wyjnopgbdszzkehxside.supabase.co/rest/v1/` | HTTP `401 Unauthorized` | The API responds; 401 is expected without an API key. It proves neither database access nor credential validity. |
+| DNS direct DB host, A record | Empty | Current resolver returned no IPv4 address for the direct DB hostname. |
+| DNS direct DB host, AAAA record | Present (IPv6) | Current resolver returned IPv6 only for the direct DB hostname; value omitted as a connection detail. |
+| TCP direct DB host, PostgreSQL direct port | False | Direct PostgreSQL port is unreachable from this shell. Cause is not isolated; could be egress, firewall, IPv6 routing, allowlist, or project network config. |
+| TCP direct DB host, pooler-style port | False | A generic pooler-style port on the direct DB hostname is unreachable here. This is **not** a definitive pooler test: the real pooler hostname/mode is unknown until `DATABASE_URL` is supplied. |
+| DNS project API host, A records | Present | API hostname resolves; addresses omitted as connection details. |
+| TCP project API host, HTTPS port | True | HTTPS egress to the Supabase API host works. |
+| HTTPS REST API probe | HTTP `401 Unauthorized` | The API responds; 401 is expected without an API key. It proves neither database access nor credential validity. |
 | Local DB tools | `psql`, `pg_isready`, `openssl`, `docker` = `MISSING` | No direct SQL, TLS-handshake, or containerized migration/rollback tooling is available in this shell. |
 | Actual SQL query against Supabase | Not run | Cannot run without `DATABASE_URL`; intentionally not inferred from the API 401 or TCP timeout. |
 
 ### Separate diagnoses
 
-- **Network/DNS:** IPv6-only direct DB DNS and failed TCP on 5432/6543 indicate a connectivity blocker from this host. Do not classify this as a credential failure.
+- **Network/DNS:** IPv6-only direct DB DNS and failed TCP probes on the direct and pooler-style ports indicate a connectivity blocker from this host. Do not classify this as a credential failure.
 - **TLS:** Not verified. The current adapter sets `rejectUnauthorized: false` for every `PGSSLMODE` value other than `disable`; see Security findings.
 - **Pooler:** Not evaluated. The pooler hostname, port, region, and mode can only be determined from the owner-supplied `DATABASE_URL`.
 - **Credentials:** Not evaluated. No credential was available and none was requested.
@@ -142,13 +142,13 @@ The ignored local file `data/store.json` was parsed without printing record cont
 | Records carrying `tenantId` | 0 |
 | Non-E.164 user phones | 1 of 11 |
 | User IDs not conforming to UUID form | 1 of 11 |
-| Auth-session IDs not conforming to UUID form | 9 of 269 |
+| Auth sessions referencing the non-UUID `super-admin-seed` user ID | 9 of 269 (session IDs themselves are valid UUIDs) |
 
 ### Compatibility findings requiring a decision
 
 1. **Normalized `tenant_id` cannot be imported as-is.** The runtime records contain `organizationId` but no `tenantId`; three organizations also have no `tenantId`. The normalized schema declares `tenant_id NOT NULL UNIQUE` on organizations and `NOT NULL` on many tables. A derivation rule (for example `tenant_id = organizationId`, and `tenant_id = id` for organizations) must be reviewed and approved before any normalized import.
 2. **19 `DbState` arrays have no normalized table:** `guestRequests`, `meetings`, `meetingParticipants`, `recordings`, `driveConnections`, `plans`, `subscriptions`, `invoices`, `paymentEvents`, `channels`, `messages`, `notificationLogs`, `aiInsights`, `integrations`, `avatarConfigs`, `workspaceTemplates`, `usageRecords`, `credentials`, `jobRuns`. A direct normalized-only migration would lose these records unless the schema is extended or these collections are explicitly retained in `saha_state`.
-3. **Non-UUID legacy IDs exist.** One user ID and nine session IDs are not UUID-shaped. The normalized schema uses UUID primary keys. These records need an explicit mapping or classification (for example synthetic guest identities) rather than silent dropping.
+3. **One non-UUID privileged user ID exists.** The `super-admin-seed` user ID is not UUID-shaped and is referenced by nine otherwise-valid sessions and one audit-log actor. The normalized schema uses UUID primary keys and the application hardcodes this ID in authorization checks. These records need an explicit backward-compatible mapping rather than silent dropping or identifier rewriting.
 4. **Credentials must remain sealed.** `credentials` is empty in this local snapshot, but the schema must preserve ciphertext and key-version metadata; no master key or plaintext should be exported.
 
 Overall: the text-level schema pair is internally consistent, but compatibility with the actual instance and a lossless normalized import are **Partially Implemented** and remain unverified.
@@ -276,7 +276,7 @@ Evidence logs: `C:\Users\HP\AppData\Local\Temp\opencode\saha-safe-branch-tests.l
 6. Approve the local-JSON snapshot import plan, including the 36-array preservation requirement and the `saha_state` no-overwrite rule.
 7. Decide and approve:
    - the `tenant_id` derivation rule for normalized tables;
-   - mapping for 1 non-UUID legacy user ID and 9 non-UUID legacy session IDs;
+   - mapping for 1 non-UUID privileged user ID and the 9 valid sessions that reference it;
    - whether the 19 unmapped `DbState` arrays stay in `saha_state` now or require schema extensions later.
 8. Approve the TLS verification fix and the production fail-closed guard before any PostgreSQL runtime is used.
 9. Approve the cutover sequence and single-instance constraint for ADR-002.
