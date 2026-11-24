@@ -9,3 +9,5 @@ data/store.json
 *.key
 .DS_Store
 coverage/
+
+.vercel
