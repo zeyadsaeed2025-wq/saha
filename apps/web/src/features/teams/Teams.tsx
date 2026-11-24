@@ -1,8 +1,10 @@
 import { Clock3, Inbox, Plus, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import {
-  Badge, Button, Card, CardHead, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton, useAsync,
+  Badge, Button, Card, CardHead, ConfirmDialog, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton,
+  Tabs, useAsync,
 } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -27,6 +29,7 @@ export function Teams() {
   const [tab, setTab] = useState<'teams' | 'requests'>('teams');
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Team | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<Team | null>(null);
   const [busy, setBusy] = useState(false);
   const [moveSelection, setMoveSelection] = useState<Record<string, string>>({});
 
@@ -81,7 +84,6 @@ export function Teams() {
   };
 
   const removeTeam = async (team: Team) => {
-    if (!window.confirm(`${t('deleteTeam')}: ${team.name}?`)) return;
     setBusy(true);
     try {
       await api(`/orgs/${orgId}/teams/${team.id}`, { method: 'DELETE' });
@@ -115,8 +117,8 @@ export function Teams() {
     finally { setBusy(false); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={90} />{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={64} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} onRetry={reload} />;
 
   const dateLabel = (iso: string) => new Date(iso).toLocaleString();
 
@@ -124,14 +126,10 @@ export function Teams() {
     <div className="rise">
       <PageHead title={t('teams')} subtitle={t('teamsSub')} />
 
-      <div className="tabs" style={{ marginBottom: 20 }}>
-        <button className={`tab ${tab === 'teams' ? 'active' : ''}`} onClick={() => setTab('teams')}>
-          {t('teams')} ({data.teams.length})
-        </button>
-        <button className={`tab ${tab === 'requests' ? 'active' : ''}`} onClick={() => setTab('requests')}>
-          {t('guestRequests')} ({data.requests.length})
-        </button>
-      </div>
+      <Tabs className="u-mb-5" label={t('team')} value={tab} onChange={setTab} items={[
+        { value: 'teams', label: `${t('teams')} (${data.teams.length})` },
+        { value: 'requests', label: `${t('guestRequests')} (${data.requests.length})` },
+      ]} />
 
       {tab === 'teams' && <Card>
         <CardHead title={t('teams')} subtitle={`${data.teams.length} · ${data.members.length} ${t('members').toLowerCase()}`}
@@ -166,7 +164,7 @@ export function Teams() {
                         ))}
                       </Select>
                       <Button size="sm" variant="danger" icon={<Trash2 size={14} />}
-                        disabled={busy} onClick={() => void removeTeam(team)}>{t('delete')}</Button>
+                        disabled={busy} onClick={() => setPendingRemove(team)}>{t('delete')}</Button>
                     </>}
                     {!teamManage && <span className="small muted">—</span>}
                   </div>
@@ -249,6 +247,10 @@ export function Teams() {
           </Field>
         </form>
       </Modal>}
+
+      {pendingRemove && <ConfirmDialog title={t('deleteTeam')}
+        message={`${t('deleteTeam')}: ${pendingRemove.name}?`} confirmLabel={t('delete')}
+        onConfirm={() => removeTeam(pendingRemove)} onClose={() => setPendingRemove(null)} />}
     </div>
   );
 }

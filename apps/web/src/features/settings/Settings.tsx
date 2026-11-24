@@ -1,8 +1,10 @@
 import { Building2, CheckCircle2, Clock3, Info, Link2, LockKeyhole, Monitor, Radio, Save, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import {
-  Badge, Button, Card, CardHead, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton, useAsync,
+  Badge, Button, Card, CardHead, ConfirmDialog, EmptyState, Field, Input, Modal, PageHead, Select,
+  Skeleton, useAsync,
 } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -24,6 +26,7 @@ export function Settings() {
   // copied into it; otherwise a fast edit can be overwritten by the load effect.
   const [formReady, setFormReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirmRevokeAll, setConfirmRevokeAll] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [roomPrivacy, setRoomPrivacy] = useState<'public' | 'private'>('public');
   const [roomCapacity, setRoomCapacity] = useState(20);
@@ -74,7 +77,6 @@ export function Settings() {
   const revokeOthers = async () => {
     const others = data?.sessions.filter((s) => !s.current) ?? [];
     if (!others.length) return;
-    if (!window.confirm(`${t('revokeAllOther')} (${others.length})?`)) return;
     try {
       await Promise.all(others.map((s) => api(`/auth/sessions/${s.id}`, { method: 'DELETE' })));
       setData((current) => current ? { ...current, sessions: current.sessions.filter((s) => s.current) } : current);
@@ -108,9 +110,9 @@ export function Settings() {
     finally { setBusy(false); }
   };
 
-  if (error) return <div className="error-banner">{error}</div>;
-  if (loading || !formReady) return <div className="stack"><Skeleton height={140} /><Skeleton height={180} /></div>;
-  if (!data) return <div className="error-banner">{t('loading')}</div>;
+  if (error) return <PageError message={error} onRetry={reload} />;
+  if (loading || !formReady) return <PageLoading rows={2} />;
+  if (!data) return <PageError message={t('loading')} />;
 
   const integrations = [
     { icon: <Radio size={20} />, title: t('livekit'), body: t('livekitDesc') },
@@ -161,7 +163,7 @@ export function Settings() {
         <Card>
           <CardHead title={t('activeSessions')} subtitle={`${data.sessions.length}`} action={
             data.sessions.some((s) => !s.current) && <Button size="sm" variant="danger" icon={<LockKeyhole size={14} />}
-              onClick={revokeOthers}>{t('revokeAllOther')}</Button>
+              onClick={() => setConfirmRevokeAll(true)}>{t('revokeAllOther')}</Button>
           } />
           <div className="card-body stack" style={{ gap: 8 }}>
             {data.sessions.map((session) => (
@@ -257,6 +259,10 @@ export function Settings() {
           <Info size={16} />{t('guestNotice')}
         </div>
       </Modal>}
+
+      {confirmRevokeAll && <ConfirmDialog title={t('revokeAllOther')}
+        message={`${t('revokeAllOther')}?`} confirmLabel={t('revokeAllOther')}
+        onConfirm={revokeOthers} onClose={() => setConfirmRevokeAll(false)} />}
     </div>
   );
 }

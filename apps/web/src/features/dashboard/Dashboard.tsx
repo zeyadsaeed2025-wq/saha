@@ -6,6 +6,7 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { Button, Card, CardHead, EmptyState, PageHead, Progress, Skeleton, StatusBadge, useAsync } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -32,8 +33,8 @@ export function Dashboard() {
     return { ...summary, members, workspaces, attendance, presence };
   }, [orgId]);
 
-  if (loading) return <div className="stack"><Skeleton height={110} />{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={130} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} />;
 
   const s = data.summary;
   const stats = [

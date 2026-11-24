@@ -3,6 +3,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, Card, CardHead, EmptyState, Input, PageHead, Skeleton, useAsync } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api, ApiError } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -84,8 +85,8 @@ export function Integrations() {
     finally { setBusyProvider(null); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={90} />{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} height={72} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} onRetry={reload} />;
 
   const byProvider = new Map(data.integrations.map((item) => [item.provider, item]));
   const webhook = byProvider.get('webhook');

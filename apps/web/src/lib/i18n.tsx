@@ -235,6 +235,7 @@ const en: Record<string, string> = {
   status_suspended: 'Suspended', status_connected: 'Connected', status_not_connected: 'Not connected',
   status_error: 'Error', status_approved: 'Approved', status_rejected: 'Rejected', status_none: 'No plan',
   errorGeneric: 'The request failed', noPermission: 'You do not have permission for this action',
+  skipToContent: 'Skip to content', confirmTitle: 'Please confirm', changeLanguage: 'Change language',
 };
 
 const ar: Record<string, string> = {
@@ -472,6 +473,7 @@ const ar: Record<string, string> = {
   status_suspended: 'معلّق', status_connected: 'متصل', status_not_connected: 'غير متصل',
   status_error: 'خطأ', status_approved: 'موافق عليه', status_rejected: 'مرفوض', status_none: 'بدون خطة',
   errorGeneric: 'فشل الطلب', noPermission: 'لا تملك صلاحية هذا الإجراء',
+  skipToContent: 'تخطَّ إلى المحتوى', confirmTitle: 'يرجى التأكيد', changeLanguage: 'تغيير اللغة',
 };
 
 interface I18nValue {

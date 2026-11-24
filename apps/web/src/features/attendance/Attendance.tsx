@@ -1,6 +1,7 @@
 import { Activity, CheckCircle2, CirclePause, History, PlugZap, ShieldCheck, Unplug } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, Card, CardHead, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton, StatusBadge, useAsync } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -65,8 +66,8 @@ export function Attendance() {
     } catch (err) { notify(err instanceof Error ? err.message : 'Correction failed', 'error'); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={100} />{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={60} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} onRetry={reload} />;
 
   const active = data.sessions.find((s) => s.status === 'scheduled');
 

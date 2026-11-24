@@ -46,6 +46,15 @@ function AppPage({ titleKey, children }: { titleKey: string; children: ReactNode
   return <AppShell title={t(titleKey)}>{children}</AppShell>;
 }
 
+function SkipLink() {
+  const { t } = useI18n();
+  return <a className="skip-link" href="#main-content">{t('skipToContent')}</a>;
+}
+
+function PublicPage({ children }: { children: ReactNode }) {
+  return <main id="main-content" className="public-main" tabIndex={-1}>{children}</main>;
+}
+
 function NotFound() {
   const { t } = useI18n();
   return (
@@ -58,16 +67,18 @@ function NotFound() {
 
 export function App() {
   return (
+    <>
+    <SkipLink />
     <Suspense fallback={<div className="app-skeleton"><Spinner /></div>}>
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/invite/:token" element={<InvitationRedeem />} />
-      <Route path="/access/:token" element={<AccessRedeem />} />
-      <Route path="/guest/:token" element={<AccessRedeem guest />} />
-      <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+      <Route path="/" element={<PublicPage><Landing /></PublicPage>} />
+      <Route path="/login" element={<PublicPage><Login /></PublicPage>} />
+      <Route path="/register" element={<PublicPage><Register /></PublicPage>} />
+      <Route path="/forgot-password" element={<PublicPage><ForgotPassword /></PublicPage>} />
+      <Route path="/invite/:token" element={<PublicPage><InvitationRedeem /></PublicPage>} />
+      <Route path="/access/:token" element={<PublicPage><AccessRedeem /></PublicPage>} />
+      <Route path="/guest/:token" element={<PublicPage><AccessRedeem guest /></PublicPage>} />
+      <Route path="/onboarding" element={<RequireAuth><PublicPage><Onboarding /></PublicPage></RequireAuth>} />
       <Route path="/app" element={<RequireAuth><AppPage titleKey="dashboard"><Dashboard /></AppPage></RequireAuth>} />
       <Route path="/app/office" element={<RequireAuth><AppPage titleKey="office"><VirtualOffice /></AppPage></RequireAuth>} />
       <Route path="/app/schedules" element={<RequireAuth><AppPage titleKey="schedules"><Schedules /></AppPage></RequireAuth>} />
@@ -87,8 +98,9 @@ export function App() {
       <Route path="/app/customization" element={<RequireAuth><AppPage titleKey="customization"><Customization /></AppPage></RequireAuth>} />
       <Route path="/app/admin" element={<RequireAuth><AppPage titleKey="admin"><Admin /></AppPage></RequireAuth>} />
       <Route path="/app/settings" element={<RequireAuth><AppPage titleKey="settings"><Settings /></AppPage></RequireAuth>} />
-      <Route path="*" element={<NotFound />} />
+      <Route path="*" element={<PublicPage><NotFound /></PublicPage>} />
     </Routes>
     </Suspense>
+    </>
   );
 }

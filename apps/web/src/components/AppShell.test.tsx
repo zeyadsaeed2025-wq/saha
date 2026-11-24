@@ -52,7 +52,7 @@ describe('AppShell', () => {
     for (const [label, href] of expected) {
       expect(within(nav).getByRole('link', { name: label })).toHaveAttribute('href', href);
     }
-    expect(screen.getByRole('button', { name: 'Change language' })).toHaveTextContent('العربية');
+    expect(screen.getByRole('button', { name: /Change language/ })).toHaveTextContent('العربية');
     expect(screen.getByText('LTR')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
     expect(screen.getByText('Page content')).toBeInTheDocument();
@@ -78,9 +78,9 @@ describe('AppShell', () => {
     const user = userEvent.setup();
     renderShell();
 
-    await user.click(screen.getByRole('button', { name: 'Change language' }));
+    await user.click(screen.getByRole('button', { name: /Change language/ }));
 
-    expect(screen.getByRole('button', { name: 'Change language' })).toHaveTextContent('English');
+    expect(screen.getByRole('button', { name: /تغيير اللغة/ })).toHaveTextContent('English');
     expect(screen.getByText('RTL')).toBeInTheDocument();
     expect(document.documentElement.dir).toBe('rtl');
     expect(screen.getByRole('link', { name: 'لوحة التحكم' })).toHaveAttribute('href', '/app');

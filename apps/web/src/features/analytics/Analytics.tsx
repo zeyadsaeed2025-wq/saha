@@ -2,6 +2,7 @@ import { BarChart3, Clock3, Layers3, TrendingUp } from 'lucide-react';
 import {
   Badge, Card, CardHead, EmptyState, PageHead, Progress, Skeleton, useAsync,
 } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -28,8 +29,8 @@ export function Analytics() {
     return { ...utilization, ...meetings, ...comparisons, ...usage };
   }, [orgId]);
 
-  if (loading) return <div className="stack"><Skeleton height={90} />{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={130} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} />;
 
   const comparisonRows: Array<{ key: keyof ComparisonData['deltas']; label: string; suffix?: string }> = [
     { key: 'attendanceSessions', label: t('attendanceSessions') },

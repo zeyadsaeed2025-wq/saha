@@ -1,5 +1,5 @@
 import {
-  BarChart3, Bell, CalendarDays, ChevronDown, ClipboardCheck, CreditCard, FileVideo, Languages,
+  BarChart3, Bell, CalendarDays, ChevronDown, ChevronRight, ClipboardCheck, CreditCard, FileVideo, Languages,
   LayoutDashboard, LogOut, Menu, MessageSquare, Monitor, Palette, Plug, Settings2, Shield,
   ShieldCheck, Sparkles, TrendingUp, Users, Video, X,
 } from 'lucide-react';
@@ -136,19 +136,24 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
       <div className="main-column">
         <header className="topbar">
           <IconButton label="Open menu" onClick={() => setMenuOpen(true)} className="menu-btn"><Menu size={20} /></IconButton>
-          <div>
-            <div className="topbar__title">{title}</div>
+          <div className="topbar__heading">
+            <div className="topbar__crumb">
+              <span className="topbar__crumb-root">{t('appName')}</span>
+              <ChevronRight size={13} aria-hidden="true" />
+              <span className="topbar__crumb-current">{title}</span>
+            </div>
             <div className="topbar__sub">{me?.organization?.name ?? t('tagline')}</div>
           </div>
           <div className="topbar__spacer" />
           {me?.organization?.settings?.demo && <span className="badge badge-accent">{t('demoData')}</span>}
           <span className="live-dot">{t('liveNow')}</span>
-          <button className="lang-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} aria-label="Change language">
-            <Languages size={15} />{lang === 'en' ? 'العربية' : 'English'}
+          <button className="lang-toggle" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            aria-label={`${t('changeLanguage')}: ${lang === 'en' ? 'العربية' : 'English'}`}>
+            <Languages size={15} aria-hidden="true" />{lang === 'en' ? 'العربية' : 'English'}
           </button>
           <span className="small muted" style={{ textTransform: 'uppercase' }}>{dir === 'rtl' ? 'RTL' : 'LTR'}</span>
         </header>
-        <main className="main-content">{children}</main>
+        <main id="main-content" className="main-content" tabIndex={-1}>{children}</main>
       </div>
     </div>
   );

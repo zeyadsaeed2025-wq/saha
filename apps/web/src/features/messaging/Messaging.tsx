@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   Badge, Button, Card, CardHead, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton, useAsync,
 } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -129,8 +130,8 @@ export function Messaging() {
     finally { setBusy(false); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={90} /><Skeleton height={320} /></div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} onRetry={reload} />;
 
   const teams = [...new Set(data.members.map((member) => member.team).filter(Boolean))];
   const rooms = data.details.flatMap((detail) => detail.rooms ?? []);

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import {
   Badge, Button, Card, CardHead, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton, useAsync,
 } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -119,8 +120,8 @@ export function Recordings() {
     finally { setBusy(false); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={110} /><Skeleton height={110} />{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={56} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} onRetry={reload} />;
 
   const dateLabel = (iso: string | null) => iso ? new Date(iso).toLocaleString() : '—';
   const providerReady = data.connection.configured !== false;

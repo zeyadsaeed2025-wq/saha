@@ -1,9 +1,10 @@
 import { KeyRound, Search, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import {
-  Badge, Button, Card, CardHead, EmptyState, Field, Input, Modal, PageHead, Select, Skeleton,
-  useAsync,
+  Badge, Button, Card, CardHead, ConfirmDialog, EmptyState, Field, Input, Modal, PageHead, Select,
+  Skeleton, useAsync,
 } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -24,6 +25,7 @@ export function Members() {
   const [role, setRole] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<Member | null>(null);
   const [editRole, setEditRole] = useState('student');
   const [editTeam, setEditTeam] = useState('');
   const [editStatus, setEditStatus] = useState('active');
@@ -75,7 +77,6 @@ export function Members() {
 
   const remove = async (member: Member) => {
     if (member.userId === me?.user.id) { notify(t('cannotRemoveSelf'), 'error'); return; }
-    if (!window.confirm(`${t('removeMember')}: ${member.name}?`)) return;
     try {
       await api(`/orgs/${orgId}/members/${member.id}`, { method: 'DELETE' });
       setData((current) => current?.filter((m) => m.id !== member.id) ?? current);
@@ -83,8 +84,8 @@ export function Members() {
     } catch (err) { notify(err instanceof Error ? err.message : 'Could not remove member', 'error'); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={90} />{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={58} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} onRetry={reload} />;
 
   const teams = [...new Set(data.map((m) => m.team))].sort();
   const filtered = data.filter((m) => {
@@ -131,7 +132,7 @@ export function Members() {
                   {manageable && <td><div className="row">
                     <Button size="sm" icon={<ShieldCheck size={14} />} onClick={() => openEdit(member)}>{t('edit')}</Button>
                     <Button size="sm" variant="danger" icon={<Trash2 size={14} />} disabled={isSelf}
-                      onClick={() => remove(member)} title={isSelf ? t('cannotRemoveSelf') : t('removeMember')}>{t('remove')}</Button>
+                      onClick={() => setPendingRemove(member)} title={isSelf ? t('cannotRemoveSelf') : t('removeMember')}>{t('remove')}</Button>
                   </div></td>}
                 </tr>
               );
@@ -200,6 +201,10 @@ export function Members() {
           </div>
         </div>
       </Modal>}
+
+      {pendingRemove && <ConfirmDialog title={t('removeMember')}
+        message={`${t('removeMember')}: ${pendingRemove.name}?`} confirmLabel={t('delete')}
+        onConfirm={() => remove(pendingRemove)} onClose={() => setPendingRemove(null)} />}
     </div>
   );
 }

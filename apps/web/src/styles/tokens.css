@@ -3,8 +3,8 @@
   --ink: #10242b;
   --ink-2: #1b3540;
   --ink-3: #2c4b57;
-  --muted: #64808b;
-  --muted-2: #8aa1a9;
+  --muted: #536d77;
+  --muted-2: #5a747e;
   --canvas: #f4f7f6;
   --surface: #ffffff;
   --surface-2: #f8faf9;
@@ -24,6 +24,19 @@
   --info-soft: #eaf2fc;
   --border: #e1e9e8;
   --border-strong: #cdd9d8;
+
+  /* Semantic text/action aliases — darker variants keep small text readable on tinted surfaces */
+  --primary-ink: #0a5e5d;
+  --accent-strong: #c25236;
+  --accent-ink: #b4472d;
+  --success-ink: #1f7a54;
+  --warning-ink: #97600c;
+  --danger-ink: #bf3b46;
+  --info-ink: #2f68b8;
+  --surface-hover: #f2f7f6;
+  --surface-sunken: #f6f9f8;
+  --overlay: rgba(10, 25, 31, .52);
+  --focus-ring: 0 0 0 3px rgba(14, 124, 123, .22);
 
   /* Typography */
   --font-sans: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system, 'Segoe UI', sans-serif;

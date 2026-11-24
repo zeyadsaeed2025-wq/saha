@@ -2,6 +2,7 @@ import { Download, FileBarChart2, Filter, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Badge, Button, Card, CardHead, EmptyState, Input, PageHead, Select, Skeleton, StatusBadge, useAsync } from '../../components/ui.js';
+import { PageError, PageLoading } from '../../components/PageStates.js';
 import { api, downloadCsv } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.js';
 import { useI18n } from '../../lib/i18n.js';
@@ -40,8 +41,8 @@ export function Reports() {
     } catch (err) { notify(err instanceof Error ? err.message : 'Export failed', 'error'); }
   };
 
-  if (loading) return <div className="stack"><Skeleton height={90} />{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} height={140} />)}</div>;
-  if (error || !data) return <div className="error-banner">{error ?? t('loading')}</div>;
+  if (loading) return <PageLoading />;
+  if (error || !data) return <PageError message={error ?? t('loading')} />;
 
   const s = data.summary;
   const cards = [

@@ -1,6 +1,7 @@
 import { Loader2, X } from 'lucide-react';
-import { useCallback, useEffect, useState, type ButtonHTMLAttributes, type CSSProperties,
-  type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties,
+  type InputHTMLAttributes, type KeyboardEvent as ReactKeyboardEvent, type ReactNode,
+  type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { useI18n } from '../lib/i18n.js';
 import type { AttendanceStatus } from '../types.js';
 
@@ -28,7 +29,7 @@ export function CardHead({ title, subtitle, action, icon }: {
   return (
     <div className="card-head">
       <div>
-        <h3>{icon ? <span className="row" style={{ gap: 8 }}>{icon}{title}</span> : title}</h3>
+        <h2>{icon ? <span className="row" style={{ gap: 8 }}>{icon}{title}</span> : title}</h2>
         {subtitle && <div className="card-sub">{subtitle}</div>}
       </div>
       {action}
@@ -104,17 +105,41 @@ export function Spinner({ label }: { label?: string }) {
   );
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({ title, children, footer, onClose }: {
   title: string; children: ReactNode; footer?: ReactNode; onClose: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const handler = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
+    const previous = document.activeElement as HTMLElement | null;
+    const focusable = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+    focusable()[0]?.focus();
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { closeRef.current(); return; }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    };
     window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener('keydown', handler);
+      if (previous?.isConnected && !previous.matches(':disabled')) previous.focus();
+      else document.getElementById('main-content')?.focus();
+    };
+  }, []);
   return (
     <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={dialogRef} className="modal" role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal__head"><h3>{title}</h3><IconButton label="Close" onClick={onClose}><X size={18} /></IconButton></div>
         <div className="modal__body">{children}</div>
         {footer && <div className="modal__foot">{footer}</div>}
@@ -134,6 +159,62 @@ export function PageHead({ title, subtitle, actions }: { title: string; subtitle
 
 export function Progress({ value }: { value: number }) {
   return <div className="progress"><div style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></div>;
+}
+
+export function Textarea({ className = '', ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={`textarea ${className}`} {...props} />;
+}
+
+export interface TabItem<T extends string> { value: T; label: ReactNode }
+
+export function Tabs<T extends string>({ items, value, onChange, label, className = '' }: {
+  items: Array<TabItem<T>>; value: T; onChange: (value: T) => void; label?: string; className?: string;
+}) {
+  const buttons = useRef<Array<HTMLButtonElement | null>>([]);
+  const select = (index: number) => {
+    const next = (index + items.length) % items.length;
+    onChange(items[next].value);
+    buttons.current[next]?.focus();
+  };
+  const move = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const rtl = document.documentElement.dir === 'rtl';
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault(); select(index + (rtl && event.key === 'ArrowRight' ? -1 : 1));
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault(); select(index + (rtl && event.key === 'ArrowLeft' ? 1 : -1));
+    } else if (event.key === 'Home') { event.preventDefault(); select(0); }
+    else if (event.key === 'End') { event.preventDefault(); select(items.length - 1); }
+  };
+  return (
+    <div className={`tabs ${className}`} role="group" aria-label={label}>
+      {items.map((item, index) => (
+        <button key={item.value} ref={(node) => { buttons.current[index] = node; }} type="button"
+          aria-pressed={value === item.value}
+          className={`tab ${value === item.value ? 'active' : ''}`}
+          onClick={() => onChange(item.value)}
+          onKeyDown={(event) => move(event, index)}>{item.label}</button>
+      ))}
+    </div>
+  );
+}
+
+export function ConfirmDialog({ title, message, confirmLabel, onConfirm, onClose }: {
+  title?: string; message: ReactNode; confirmLabel?: string;
+  onConfirm: () => void | Promise<void>; onClose: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Modal title={title ?? t('confirmTitle')} onClose={onClose} footer={
+      <>
+        <Button onClick={onClose}>{t('cancel')}</Button>
+        <Button variant="danger" onClick={() => { void onConfirm(); onClose(); }}>
+          {confirmLabel ?? t('delete')}
+        </Button>
+      </>
+    }>
+      <p className="confirm-message">{message}</p>
+    </Modal>
+  );
 }
 
 export function useAsync<T>(loader: () => Promise<T>, deps: unknown[]) {

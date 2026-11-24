@@ -1,0 +1,39 @@
+/* ============ Layout & spacing utilities ============
+   Small, prefixed helpers for the handful of one-off offsets that would
+   otherwise become inline magic numbers. They never override component
+   internals; they only add predictable spacing/layout when opted into. */
+
+.u-flex { display: flex; }
+.u-flex-wrap { flex-wrap: wrap; }
+.u-inline-center { display: inline-flex; align-items: center; }
+.u-items-center { align-items: center; }
+.u-justify-between { justify-content: space-between; }
+.u-gap-2 { gap: var(--sp-2); }
+.u-gap-3 { gap: var(--sp-3); }
+.u-gap-4 { gap: var(--sp-4); }
+.u-gap-5 { gap: var(--sp-5); }
+.u-min-w-0 { min-width: 0; }
+.u-flex-1 { flex: 1; }
+.u-full { width: 100%; }
+
+.u-mb-3 { margin-bottom: var(--sp-3); }
+.u-mb-4 { margin-bottom: var(--sp-4); }
+.u-mb-5 { margin-bottom: var(--sp-5); }
+.u-mb-6 { margin-bottom: var(--sp-6); }
+.u-mt-3 { margin-top: var(--sp-3); }
+.u-mt-4 { margin-top: var(--sp-4); }
+.u-mt-5 { margin-top: var(--sp-5); }
+
+.u-text-center { text-align: center; }
+.u-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-nowrap { white-space: nowrap; }
+.u-scroll-x { overflow-x: auto; }
+
+.u-surface { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.u-subtle { color: var(--muted); font-size: var(--text-sm); }
+.u-divider { height: 1px; background: var(--border); }
+
+@media (max-width: 620px) {
+  .u-mb-5 { margin-bottom: var(--sp-4); }
+  .u-mb-6 { margin-bottom: var(--sp-5); }
+}
