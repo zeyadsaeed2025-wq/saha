@@ -1,0 +1,61 @@
+name: Deploy static web to GitHub Pages
+
+# Publishes apps/web only. GitHub Pages cannot run the Express API, the
+# WebSocket world server, the local JSON store, or PostgreSQL. With no
+# VITE_API_URL / VITE_WS_URL the UI calls /api and /ws on the Pages origin and
+# those requests will fail. A separate Node host is still required for login,
+# data, attendance and the 2D office.
+
+on:
+  push:
+    branches:
+      - supabase-safe-connection
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static web
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          npm run build:web -- --base="/${REPO_NAME}/"
+          cp dist/web/index.html dist/web/404.html
+          touch dist/web/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/web
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
