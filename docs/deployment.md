@@ -45,3 +45,11 @@ The three credential cookies remain split: `saha_session` (HttpOnly), `saha_csrf
 - The owner supplied the GitHub destination `https://github.com/zeyadsaeed2025-wq/saha.git` and Supabase project `wyjnopgbdszzkehxside`. The Supabase dashboard URL is not a connection string: `DATABASE_URL` with the database password and network access to the project's Postgres port are still required. No Vercel project, Render/Node host, database round-trip or deployment was executed.
 - In-memory rate limiting and presence are correct only while the API runs as a single instance.
 - This document does **not** authorize provisioning or activating paid services; those require explicit owner approval.
+
+## GitHub Pages (static UI only)
+
+`.github/workflows/deploy-pages.yml` builds `apps/web` with `--base=/<repo-name>/` and publishes `dist/web` to GitHub Pages on every push to `supabase-safe-connection`. It also copies `index.html` to `404.html` so React Router deep links resolve.
+
+GitHub Pages serves static files only. It **cannot** run the Express API, the WebSocket world server, the local JSON store, or PostgreSQL. With no `VITE_API_URL` / `VITE_WS_URL`, the published UI calls `/api/...` and `/ws/...` on the Pages origin and those requests fail. Login, organizations, attendance, reports and the 2D office remain unavailable until a separate Node host is deployed and those two build-time variables point to it.
+
+To activate: in repository **Settings → Pages**, set **Source** to **GitHub Actions**. The workflow needs no secrets. Publishing the static UI is not a production cutover and does not authorize database migration or adapter activation.
