@@ -1,6 +1,6 @@
-# Deployment layout (prepared, not yet deployed)
+# Deployment layout (static web published; backend not deployed)
 
-Status: **Partially Implemented** — Vercel config and cross-origin settings are prepared locally. Nothing has been published, no Vercel project exists yet, and no Node host or managed database has been provisioned.
+Status: **Partially Implemented** — the static web app has been published to Vercel. Cross-origin settings are prepared locally, but no Node API host or managed database has been provisioned, and no full application cutover has occurred.
 
 ## Target architecture
 
@@ -53,3 +53,15 @@ The three credential cookies remain split: `saha_session` (HttpOnly), `saha_csrf
 GitHub Pages serves static files only. It **cannot** run the Express API, the WebSocket world server, the local JSON store, or PostgreSQL. With no `VITE_API_URL` / `VITE_WS_URL`, the published UI calls `/api/...` and `/ws/...` on the Pages origin and those requests fail. Login, organizations, attendance, reports and the 2D office remain unavailable until a separate Node host is deployed and those two build-time variables point to it.
 
 To activate: in repository **Settings → Pages**, set **Source** to **GitHub Actions**. The workflow needs no secrets. Publishing the static UI is not a production cutover and does not authorize database migration or adapter activation.
+
+## Vercel deployment executed (static UI only)
+
+On 2026-11-24 the static web app was deployed from `vercel.json` to the Vercel team scope supplied by the owner:
+
+- Production URL: `https://virtual-office-saas-brown.vercel.app`
+- Preview URL: `https://virtual-office-saas-mefn1uhmq-zeyadsaeed600-3050s-projects.vercel.app`
+- Build: `npm run build:web` → `dist/web`, with the existing SPA rewrite to `index.html`.
+
+Verification: `/` and `/app/admin` return `200 text/html`. `/api/health` also returns `200 text/html` because the SPA rewrite serves `index.html` for every path; it is **not** a JSON API response. No Express API, WebSocket server, local JSON store, PostgreSQL adapter, `DATABASE_URL`, or credential vault is running on Vercel. Login, data, attendance and the 2D office therefore do not work on this deployment. `VITE_API_URL` and `VITE_WS_URL` were intentionally left unset because no API host exists yet.
+
+No secrets were printed or committed. This deployment does not authorize database migration, adapter activation, or production cutover.
